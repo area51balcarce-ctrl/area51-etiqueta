@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Etiqueta AREA 51</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <style>
     body {
@@ -18,7 +19,7 @@
       background: #fff;
       padding: 20px;
       border-radius: 10px;
-      width: 300px;
+      width: 320px;
       box-shadow: 0 0 10px rgba(0,0,0,0.5);
     }
 
@@ -31,86 +32,216 @@
     label {
       font-weight: bold;
       font-size: 13px;
+      display: block;
+      margin-top: 10px;
     }
 
     input {
       width: 100%;
       padding: 8px;
       margin-top: 5px;
-      margin-bottom: 12px;
       border: 1px solid #ccc;
       border-radius: 6px;
       font-size: 14px;
+      box-sizing: border-box;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
     }
 
     button {
       width: 100%;
       padding: 10px;
-      background: #00e676;
       border: none;
       border-radius: 8px;
       cursor: pointer;
       font-size: 14px;
       font-weight: bold;
+      margin-top: 12px;
     }
 
+    .btn-load {
+      background: #00e676;
+      color: #000;
+    }
+
+    .btn-gen {
+      background: #111;
+      color: #fff;
+    }
+
+    .btn-print {
+      background: #2196f3;
+      color: #fff;
+    }
+
+    .status {
+      margin-top: 8px;
+      font-size: 12px;
+    }
+    .ok { color: #0a8f3c; }
+    .err { color: #c62828; }
+
     .preview {
-      margin-top: 20px;
-      padding: 15px;
+      margin-top: 16px;
+      padding: 14px;
       border: 2px dashed #444;
       border-radius: 10px;
       background: #f9f9f9;
       font-size: 16px;
+      display: none;
     }
 
-    .print-btn {
-      background: #2196f3;
-      margin-top: 10px;
+    /* IMPRESION: que salga solo la etiqueta */
+    @media print {
+      body { background: #fff !important; padding: 0 !important; }
+      .card > :not(.preview) { display: none !important; }
+      .preview {
+        display: block !important;
+        border: 2px solid #000 !important;
+        border-radius: 8px !important;
+        margin: 0 !important;
+      }
     }
   </style>
 </head>
 
 <body>
+  <div class="card">
+    <h2>Etiqueta AREA 51</h2>
 
-<div class="card">
-  <h2>Etiqueta AREA 51</h2>
+    <label>N° de Orden</label>
+    <div class="row">
+      <input id="orden" type="text" placeholder="A51-2025-12-04-0006" />
+    </div>
 
-  <label>N° de Orden</label>
-  <input id="orden" type="text" placeholder="A51-2025-12-04-0006">
+    <button class="btn-load" id="btnCargar">Cargar datos</button>
+    <div id="estado" class="status"></div>
 
-  <label>Cliente</label>
-  <input id="cliente" type="text" placeholder="Nombre del cliente">
+    <label>Cliente (Nombre y apellido)</label>
+    <input id="cliente" type="text" placeholder="Se autocompleta al cargar" />
 
-  <button onclick="generar()">Generar etiqueta</button>
+    <label>Equipo (opcional)</label>
+    <input id="equipo" type="text" placeholder="Opcional" />
 
-  <div id="preview" class="preview" style="display:none;"></div>
+    <label>Modelo (opcional)</label>
+    <input id="modelo" type="text" placeholder="Opcional" />
 
-  <button id="btnPrint" class="print-btn" style="display:none;" onclick="window.print()">🖨 Imprimir</button>
-</div>
+    <button class="btn-gen" id="btnGenerar">Generar etiqueta</button>
+
+    <div id="preview" class="preview"></div>
+
+    <button class="btn-print" id="btnPrint" style="display:none;">🖨 Imprimir</button>
+  </div>
 
 <script>
-function generar() {
-  const orden = document.getElementById("orden").value.trim();
-  const cliente = document.getElementById("cliente").value.trim();
+  // ✅ Tu WebApp (el mismo Apps Script que ya usás)
+  const API_URL =
+    "https://script.google.com/macros/s/AKfycbwtLCKoaMMRdradoAmuOFJ60BfCTHN2OMZpHtYUd5cf39YNdE_U9B8hUXjogIGp9DnPLg/exec";
 
-  if (!orden || !cliente) {
-    alert("Completá ambos campos.");
-    return;
+  const ordenInput   = document.getElementById("orden");
+  const clienteInput = document.getElementById("cliente");
+  const equipoInput  = document.getElementById("equipo");
+  const modeloInput  = document.getElementById("modelo");
+
+  const estadoDiv = document.getElementById("estado");
+  const previewDiv = document.getElementById("preview");
+  const btnPrint = document.getElementById("btnPrint");
+
+  function setStatus(msg, ok) {
+    estadoDiv.textContent = msg;
+    estadoDiv.className = "status " + (ok ? "ok" : "err");
   }
 
-  const etiqueta =
-    "<strong>AREA 51</strong><br>" +
-    "🆔 <strong>" + orden + "</strong><br>" +
-    "👤 " + cliente + "<br>" +
-    "<hr>" +
-    "<small>NO RETIRAR ETIQUETA</small>";
+  async function cargarDatosPorOrden() {
+    const ordenId = ordenInput.value.trim();
+    if (!ordenId) {
+      setStatus("Ingresá un N° de orden.", false);
+      return;
+    }
 
-  const preview = document.getElementById("preview");
-  preview.innerHTML = etiqueta;
-  preview.style.display = "block";
+    setStatus("Cargando datos...", true);
 
-  document.getElementById("btnPrint").style.display = "block";
-}
+    try {
+      const res = await fetch(API_URL + "?ordenId=" + encodeURIComponent(ordenId));
+      const data = await res.json();
+
+      if (!data.ok) {
+        setStatus("Orden no encontrada.", false);
+        return;
+      }
+
+      // ✅ Autocompleta nombre/apellido del cliente
+      clienteInput.value = data.nombre || "";
+
+      // (Opcional pero útil) Autocompleta equipo/modelo si querés
+      equipoInput.value = data.equipo || "";
+      modeloInput.value = data.modelo || "";
+
+      setStatus("Datos cargados OK ✅", true);
+
+    } catch (e) {
+      console.error(e);
+      setStatus("Error al conectar con el sistema.", false);
+    }
+  }
+
+  function generarEtiqueta() {
+    const orden = ordenInput.value.trim();
+    const cliente = clienteInput.value.trim();
+
+    if (!orden) {
+      alert("Poné el N° de orden.");
+      return;
+    }
+    if (!cliente) {
+      alert("Falta el nombre del cliente (cargalo o escribilo).");
+      return;
+    }
+
+    const equipo = equipoInput.value.trim();
+    const modelo = modeloInput.value.trim();
+
+    const etiqueta =
+      "<div style='text-align:center; font-weight:bold; font-size:18px;'>AREA 51</div>" +
+      "<div style='margin-top:8px; font-size:16px;'><b>🆔 Orden:</b> " + escapeHtml(orden) + "</div>" +
+      "<div style='margin-top:6px; font-size:16px;'><b>👤 Cliente:</b> " + escapeHtml(cliente) + "</div>" +
+      (equipo ? "<div style='margin-top:6px; font-size:16px;'><b>🎮 Equipo:</b> " + escapeHtml(equipo) + "</div>" : "") +
+      (modelo ? "<div style='margin-top:6px; font-size:16px;'><b>🏷 Modelo:</b> " + escapeHtml(modelo) + "</div>" : "") +
+      "<hr style='margin:12px 0; border:0; border-top:1px solid #000;'>" +
+      "<div style='text-align:center; font-size:12px;'><b>NO RETIRAR ETIQUETA</b></div>";
+
+    previewDiv.innerHTML = etiqueta;
+    previewDiv.style.display = "block";
+    btnPrint.style.display = "block";
+  }
+
+  // Seguridad mínima para no romper HTML si escriben caracteres raros
+  function escapeHtml(str) {
+    return String(str)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  document.getElementById("btnCargar").addEventListener("click", cargarDatosPorOrden);
+  document.getElementById("btnGenerar").addEventListener("click", generarEtiqueta);
+  btnPrint.addEventListener("click", () => window.print());
+
+  // Extra: si abrís la URL con ?ordenId=XXXX, lo precarga solo
+  (function autoByUrl() {
+    const url = new URL(window.location.href);
+    const oid = url.searchParams.get("ordenId");
+    if (oid) {
+      ordenInput.value = oid;
+      cargarDatosPorOrden();
+    }
+  })();
 </script>
 
 </body>
