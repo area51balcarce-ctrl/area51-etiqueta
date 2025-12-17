@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Etiqueta AREA 51</title>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      background: #111;
+      display: flex;
+      justify-content: center;
+    }
+
+    .card {
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      width: 300px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    }
+
+    h2 {
+      margin: 0 0 10px;
+      font-size: 20px;
+      text-align: center;
+    }
+
+    label {
+      font-weight: bold;
+      font-size: 13px;
+    }
+
+    input {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      margin-bottom: 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      background: #00e676;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .preview {
+      margin-top: 20px;
+      padding: 15px;
+      border: 2px dashed #444;
+      border-radius: 10px;
+      background: #f9f9f9;
+      font-size: 16px;
+    }
+
+    .print-btn {
+      background: #2196f3;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="card">
+  <h2>Etiqueta AREA 51</h2>
+
+  <label>N° de Orden</label>
+  <input id="orden" type="text" placeholder="A51-2025-12-04-0006">
+
+  <label>Cliente</label>
+  <input id="cliente" type="text" placeholder="Nombre del cliente">
+
+  <button onclick="generar()">Generar etiqueta</button>
+
+  <div id="preview" class="preview" style="display:none;"></div>
+
+  <button id="btnPrint" class="print-btn" style="display:none;" onclick="window.print()">🖨 Imprimir</button>
+</div>
+
+<script>
+function generar() {
+  const orden = document.getElementById("orden").value.trim();
+  const cliente = document.getElementById("cliente").value.trim();
+
+  if (!orden || !cliente) {
+    alert("Completá ambos campos.");
+    return;
+  }
+
+  const etiqueta =
+    "<strong>AREA 51</strong><br>" +
+    "🆔 <strong>" + orden + "</strong><br>" +
+    "👤 " + cliente + "<br>" +
+    "<hr>" +
+    "<small>NO RETIRAR ETIQUETA</small>";
+
+  const preview = document.getElementById("preview");
+  preview.innerHTML = etiqueta;
+  preview.style.display = "block";
+
+  document.getElementById("btnPrint").style.display = "block";
+}
+</script>
+
+</body>
+</html>
