@@ -132,10 +132,15 @@
 
     <button class="btn-gen" id="btnGenerar">Generar etiqueta</button>
 
+    <!-- ✅ le dejamos ID para capturar como imagen -->
     <div id="preview" class="preview"></div>
 
-    <button class="btn-print" id="btnPrint" style="display:none;">🖨 Imprimir</button>
+    <!-- ✅ cambia de Imprimir a Descargar -->
+    <button class="btn-print" id="btnDownload" style="display:none;">⬇️ Descargar</button>
   </div>
+
+  <!-- ✅ Librería para convertir el DIV a imagen -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <script>
   // ✅ Tu WebApp (el mismo Apps Script que ya usás)
@@ -149,7 +154,7 @@
 
   const estadoDiv = document.getElementById("estado");
   const previewDiv = document.getElementById("preview");
-  const btnPrint = document.getElementById("btnPrint");
+  const btnDownload = document.getElementById("btnDownload");
 
   function setStatus(msg, ok) {
     estadoDiv.textContent = msg;
@@ -216,7 +221,43 @@
 
     previewDiv.innerHTML = etiqueta;
     previewDiv.style.display = "block";
-    btnPrint.style.display = "block";
+    btnDownload.style.display = "block";
+
+    // ✅ OPCIONAL: si querés que al generar se descargue sola, descomentá:
+    // descargarEtiquetaComoImagen();
+  }
+
+  // ✅ Descarga la etiqueta generada como PNG (imagen)
+  async function descargarEtiquetaComoImagen() {
+    if (previewDiv.style.display === "none" || !previewDiv.innerHTML.trim()) {
+      alert("Primero generá la etiqueta.");
+      return;
+    }
+
+    const orden = (ordenInput.value || "AREA51").trim();
+    const safeOrden = orden.replace(/[^\w\-]+/g, "_");
+    const filename = `Etiqueta_${safeOrden}.png`;
+
+    try {
+      // Captura SOLO el preview
+      const canvas = await html2canvas(previewDiv, {
+        scale: 2,
+        backgroundColor: "#f9f9f9"
+      });
+
+      const dataUrl = canvas.toDataURL("image/png");
+
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+    } catch (err) {
+      console.error(err);
+      alert("No se pudo generar la imagen de la etiqueta.");
+    }
   }
 
   // Seguridad mínima para no romper HTML si escriben caracteres raros
@@ -231,7 +272,9 @@
 
   document.getElementById("btnCargar").addEventListener("click", cargarDatosPorOrden);
   document.getElementById("btnGenerar").addEventListener("click", generarEtiqueta);
-  btnPrint.addEventListener("click", () => window.print());
+
+  // ✅ Botón Descargar
+  btnDownload.addEventListener("click", descargarEtiquetaComoImagen);
 
   // Extra: si abrís la URL con ?ordenId=XXXX, lo precarga solo
   (function autoByUrl() {
